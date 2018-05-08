@@ -330,7 +330,8 @@ async function getLevelElement (index) {
     openLevel(level, index >= unlockedScenes, !!levelKey)
   })
   listItem.title = `Cena ${levelKey ? 'resolvida' : index >= unlockedScenes ? 'bloqueada' : index + 1}`
-  listItem.className = levelKey ? 'solved-scene' : index >= unlockedScenes ? 'locked-scene' : ''
+  listItem.classList.toggle('solved-scene', !!levelKey)
+  listItem.classList.toggle('locked-scene', index >= unlockedScenes)
 
   return listItem
 }
