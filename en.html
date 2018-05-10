@@ -286,7 +286,7 @@ async function getLevelElement (index) {
   // This function is responsible to render each level element in the scene list
   const level = levels[index]
   const levelKey = keys[level]
-  const listItem = document.createElement(levelKey ? 'div' : 'button')
+  const listItem = document.createElement('button')
   listItem.textContent = index + 1
 
   // If the player have the level key then the level was already resolved.
@@ -309,8 +309,6 @@ async function getLevelElement (index) {
       const imageData = concatTypedArray(imageHeader, imagePartialData)
       const imageURL = URL.createObjectURL(new Blob([imageData], {type: 'image/jpeg'}))
       listItem.style.backgroundImage = `url(${imageURL})`
-
-      return listItem
     }
   }
 

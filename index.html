@@ -294,8 +294,6 @@ async function getLevelElement (index) {
   // Se o jogador tem a chave do nível então significa que o jogador já resolveu esse nível.
   // Nesse caso será mostrada uma imagem da mãe daquele nível.
   if (levelKey) {
-    listItem.title = `Cena ${index + 1} resolvida`
-
     const data = decodeBase64(gameData.levels[level].data)
     const wrappedKey = await crypto.subtle.importKey('raw', decodeBase64(levelKey), {name: 'AES-GCM'}, false, ['decrypt'])
     const decryptedData = await crypto.subtle.decrypt({
