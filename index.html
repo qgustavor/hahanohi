@@ -284,26 +284,6 @@ async function getLevels () {
   return levels
 }
 
-async function getLevels (nick) {
-  // A ordem dos níveis é diferente para cada jogador
-  // Primeiro uma array com o número de cada nível é criada
-  const levels = []
-  for (let i = 0; i < gameData.levels.length; i++) levels.push(i)
-
-  // Então calcula-se o SHA-512 do nick do jogador
-  const nickArray = new TextEncoder().encode(nick)
-  const nickHash = await crypto.subtle.digest({ name: 'SHA-512' }, nickArray)
-  const hashArr = new Uint8Array(nickHash)
-
-  // Finalmente essa hash é usada como função aleatória para embaralhar
-  // os níveis usando Fisher-Yates
-  for (let i = levels.length - 1; i > 0; i--) {
-    const j = Math.floor(hashArr[i] * (i + 1) / 256)
-    ;[levels[i], levels[j]] = [levels[j], levels[i]]
-  }
-  return levels
-}
-
 async function getLevelElement (index) {
   // Essa função é a responsável por renderizar os elementos na lista de níveis
   const level = levels[index]
