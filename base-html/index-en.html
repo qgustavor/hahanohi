@@ -598,7 +598,7 @@ async function loadRank () {
     return
   }
 
-  const rankApiEndpoint = 'https://mothers-day-game-37430.firebaseio.com/'
+  const rankApiEndpoint = 'https://[example].firebaseio.com/'
   let data = await fetch(rankApiEndpoint + 'players.json').then(e => {
     if (e.status > 400) throw Error('HTTP error')
     return e.json()
