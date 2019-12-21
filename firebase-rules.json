@@ -1,0 +1,19 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "players": {
+      "$username": {
+        "$level_id": {
+          ".write": "!data.exists() && newData.exists()",
+					".validate": "$level_id.matches(/^(\\d|[1-2]\\d)$/) && newData.hasChildren(['signature', 'timestamp'])",
+          /* the signature comes from a ECDSA-SHA-256 Base64: 64 bytes = 88 characters */
+          "signature": { ".validate": "newData.isString() && newData.val().length === 88" },
+					"timestamp": { ".validate": "newData.val() <= now" },
+        	"$other": { ".validate": false }
+        }
+      }
+    },
+    "$other": { ".validate": false }
+  }
+}

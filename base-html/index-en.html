@@ -1,0 +1,912 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Guess the mother</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!--
+This game works as a single HTML page.
+The code is open-source and, with the exception of
+the rank, it works fully offline.
+
+There`s no secrets: just dhash and criptography.
+-->
+
+<style>
+  html { background-color: #FFC107;
+background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2256%22%20height%3D%22100%22%3E%3Cpath%20fill%3D%22%23FFC107%22%20d%3D%22M0%200h56v100H0z%22%2F%3E%3Cpath%20d%3D%22M28%2066L0%2050V16L28%200l28%2016v34L28%2066v34%22%20fill%3D%22none%22%20stroke%3D%22%23FFD507%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M28%200v34L0%2050v34l28%2016%2028-16V50L28%2034%22%20fill%3D%22none%22%20stroke%3D%22%23FFD107%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E");  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    margin: 40px auto;
+    max-width: 640px;
+    line-height: 1.6;
+    font-size: 18px;
+    color: #222;
+    padding: 20px 30px;
+    background-color: #FFF;
+    box-shadow: 10px 10px rgba(0, 0, 0, 0.1)
+  }
+  @media print {body { max-width: none; } }
+  h1,h2,h3 { line-height:1.2 }
+  .accent { color: #e91e63; }
+  .muted { color: #9e9e9e; }
+  .view { display: none; }
+  .current.view { display: block; }
+  .scene-list { text-align: center; }
+  .scene-list button {
+    display: inline-flex;
+    width: 3em;
+    height: 3em;
+    border: 2px solid #e91e63;
+    margin: 5px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    font-size: 1em;
+    background: #FFF;
+    color: #222;
+    box-sizing: border-box;
+    vertical-align: bottom;
+  }
+  .scene-list button.solved-scene {
+    color: white;
+    border-color: #4caf50;
+    background-size: cover;
+    background-position: center;
+    text-shadow: 0 0 1em #4caf50;
+  }
+  .scene-list .locked-scene {
+    opacity: 0.2;
+    transition: opacity 0.5s;
+    border-color: #888;
+  }
+  .locked-scene:hover, .locked-scene:active { opacity: 1; }
+  .rank-container { overflow-x: auto; }
+  .rank-container p, .rank-container.loading table {display: none}
+  .rank-container.loading p {display: block}
+  table { border-collapse: collapse; width: 100%; }
+  th, td {border: solid 1px #d81b60; padding: 0.3em}
+  .rank-level-list { color: #d81b60 }
+  .locked-scene-message, .solved-scene-message,
+  .solved-scene-view .scene-submit-area {display: none}
+  .locked-scene-view .locked-scene-message,
+  .solved-scene-view .solved-scene-message {display: block}
+</style>
+<noscript><style>#game-info-view {display: block}</style></noscript>
+
+<div id="main-view" class="view">
+  <header><h1>Guess the mother</h1></header>
+
+  <p>We choose some mothers from anime and took some pictures of them in some scenes they appear.
+  The challenge is guessing what's the mother and the scene by one some few hints!</p>
+  <p>If you guess the scene the mother is in take a picture of it and post it here to check if you got it right.
+  Wins the game who can guess right more scenes and mothers!</p>
+  <p><span class="accent">Good luck to all the players!</span></p>
+  <form id="start-form"><p>
+    <label>Enter your nickname: <input id="nick" maxlength="40"></label> <button id="init-btn">Play!</button>
+  </p></form>
+  <p><button class="show-game-info">More info and credits</button></p>
+  <p><a href=".">Versão em Português</a></p>
+</div>
+
+<div id="game-info-view" class="view">
+  <header><h1>Guess the mother</h1></header>
+
+  <p class="accent">If you're seeing this message update your browser: use the lastest version of
+  Chrome, Edge, Firefox or Safari.</p>
+
+  <p><strong>Info and hints:</strong><br>
+  <p>As the game don't asks for a password or something like this the answers are stored in the browser, then
+  don't clean the cache, or cookies, or change the browser or the device. If someone do that the resolved scenes
+  will be shown as not resolved.</p>
+  <p>All anime in this game can be found and watched legally on Crunchyroll
+  <!-- Athough some aren't avaliable on United States and other aren't avaliable on Brazil -->
+  and some are also on HIDIVE: it's a good idea to check this places.</p>
+  <p>But the most important thing here is thinking hard! Example: first check in what anime there are mothers,
+  as an example you will not find any on Gugure! Kokkuri-san.</p>
+  <!-- At least is what I remember from that anime -->
+  <p>Small differences in the picture, like the service's logo, don't changes the result, but if the picture
+  was cropped then it can causa problems. The best way to avoid those problems is taking pictures with the player on full screen. Don't try
+  to manually crop pictures as it can fail..</p>
+
+  <p><strong>Tools and technology used:</strong></p>
+  <ul>
+    <li>WebCrypto, which is a modern technology which allows cryptography in browsers, allowing web pages to protect
+    certain data, like the game answers.</li>
+    <!-- Of course, as the server have control of the page isn't possible to protect this
+    data from it, unless everyone download this game and verify if there isn't nothing
+    strange in the code. -->
+    <li><a href="http://www.hackerfactor.com/blog/?/archives/529-Kind-of-Like-That.html">dHash</a>,
+    made by Dr. Neal Krawetz, which allows generating a small representation of a big image
+    in a way small changes in the image don't change this value, and in a simple and fast way.</li>
+    <li><a href="https://github.com/amper5and/secrets.js/">secrets.js</a>, made by Alexander Stetsyuk,
+    which implement the Shamir Secret Sharing Scheme, which is used to make the hints work.</li>
+    <li><a href="https://github.com/dchest/tweetnacl-util-js">tweetnacl-util-js</a>, which provides the Base64 conversion functions.</li>
+    <li><a href="https://firebase.google.com/">Firebase</a>, the server used to make the ranking work.</li>
+    <li>ECMAScript 2017, to make the code simpler.</li>
+    <li>The honeycomb SVG pattern <a href="https://philiprogers.com/svgpatterns/">by Philip Rogers</a>.</li>
+    <!-- It's cute, it isn't? Honeycombs remember the queen bee, which is the mother of the other bees. -->
+  </ul>
+
+  <button hidden class="return-btn">Return</button>
+</div>
+
+<div id="list-view" class="view">
+  <header><h1>Guess the mother</h1></header>
+
+  <p>Choose a scene:</p>
+  <div class="scene-list"></div>
+  <p><button class="show-game-info">More info and credits</button> <button id="change-nick-btn">Change nickname</button></p>
+
+  <h2>Ranking</h2>
+  <div class="rank-container loading">
+    <p class="accent">Loading ranking...</p>
+    <table><thead><tr>
+      <th>Rank</th>
+      <th>Player</th>
+      <th>Guessed scenes</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<div id="scene-view" class="view">
+  <header><h1>Guess the mother</h1></header>
+
+  <p><span class="accent">Hints:</span></p>
+  <ul id="hint-list"></ul>
+
+  <div class="scene-submit-area">
+    <p>If you know what's the scene take a picture of it and submit it here:<br>
+    <input type="file" id="scene-submit"></p>
+    <p id="scene-submit-result" class="accent"></p>
+  </div>
+
+  <p class="accent solved-scene-message">You already guessed this scene.</p>
+  <p class="locked-scene-message"><span class="accent">This scene is locked:</span> until it's
+  unlocked it will not add points in the ranking. But guessing it can unlock new hints.</p>
+
+  <p><span class="accent">Important:</span> the subtitles can mess the verification, so
+  when taking the picture disable the subtitles. In Crunchyroll just press the mouse right button and
+  select the option that turn those off. In HIDIVE use the button in the bottom right part of the player.</p>
+
+  <p>You don't need to save the picture in a file, just open the anime in full screen, press print screen and paste here using Ctrl+V.</p>
+
+  <button class="return-btn">Return to scene list</button>
+</div>
+
+<!-- The game data is in this huge JSON below -->
+<script id="game-data" type="application/json">{}</script>
+
+<!-- The JSON data format is this:
+  levels: [{
+    key: the level crypto key, which is encrypted by the visual hash of the image
+    data:
+      // bytes 0-15 (16 bytes): PBKDF2 salt and also AES-GCM IV
+      // bytes 16-: level encrypted data
+      // - 206 bytes: level verification private key, ECDSA, JWT format
+      // - n * 18 bytes: shares of the keys used to decrypt hints
+      // - o que sobrar: scene image thumbnail (without headers)
+    hints: [ hint contents, hints 1-3 are just strings, hints 4-7 are encrypted, the IV used is the same from 'data' ]
+    publicKey: // public key of the verification key in spki format
+  }]
+  thumbnailHeader: the headers of the scene thumbnails
+  hintThresholds: how many levels are needed to unlock each hint
+  hintSalt: an extra salt to avoid IV-key pairs reuse (which is insecure)
+  unlockedLevels: how many levels are initially unlocked
+} -->
+
+<!-- The game code is below -->
+<script>{
+const startForm = document.getElementById('start-form')
+const initBtn = document.getElementById('init-btn')
+const returnBtns = document.getElementsByClassName('return-btn')
+const gameInfoBtns = document.getElementsByClassName('show-game-info')
+const changeNickBtn = document.getElementById('change-nick-btn')
+const nickEl = document.getElementById('nick')
+const hintList = document.getElementById('hint-list')
+const submitInput = document.getElementById('scene-submit')
+const submitResult = document.getElementById('scene-submit-result')
+const sceneList = document.querySelector('.scene-list')
+
+const gameData = JSON.parse(document.getElementById('game-data').innerHTML)
+let hintKeys = []
+let levels = []
+let currentLevel = null
+let keys
+let nick
+
+function prepareGame () {
+  startForm.addEventListener('submit', startGame)
+  changeNickBtn.addEventListener('click', resetStorage)
+  document.addEventListener('paste', handleImagePaste)
+  submitInput.addEventListener('change', handleImageUpload)
+
+  for (let btn of returnBtns) {
+    btn.addEventListener('click', returnToList)
+    btn.removeAttribute('hidden')
+  }
+
+  for (let btn of gameInfoBtns) {
+    btn.addEventListener('click', showGameInfo)
+  }
+
+  // Remove the non-compatible browser warning
+  document.querySelector('#game-info-view .accent').remove()
+
+  const storedNick = localStorage.getItem('mother-game-nick')
+  if (storedNick) {
+    nickEl.value = storedNick
+    startGame()
+  } else {
+    gotoView('main-view')
+  }
+}
+
+async function startGame (evt) {
+  // The game is started when the player enters his nickname
+  if (evt) evt.preventDefault()
+  nick = nickEl.value.trim()
+
+  // The nick can't be empty, start with dot or have a slash
+  // (because server limitations, and I don't want to workaround those)
+  // And why large nicknames?
+  if (!nick || nick.startsWith('.') || nick.includes('/') || nick.length > 40) return
+
+  // The nickname is stored so it don't needs to be inputted again
+  localStorage.setItem('mother-game-nick', nick)
+
+  // The level and hint keys are loaded from localStorage
+  keys = JSON.parse(localStorage.getItem('mother-game-keys-' + nick) || '{}')
+  hintKeys = JSON.parse(localStorage.getItem('mother-game-hints-' + nick) || '[]')
+
+  // Get the level list and render those
+  levels = await getLevels()
+  sceneList.innerHTML = ''
+
+  for (let i = 0; i < levels.length; i++) {
+    const listItem = await getLevelElement(i)
+    sceneList.appendChild(listItem)
+  }
+
+  gotoView('list-view')
+  currentLevel = null
+  loadRank()
+}
+
+async function getLevels () {
+  // An array with each level number is created
+  const levels = []
+  for (let i = 0; i < gameData.levels.length; i++) levels.push(i)
+  return levels
+}
+
+async function getLevelElement (index) {
+  // This function is responsible to render each level element in the scene list
+  const level = levels[index]
+  const levelKey = keys[level]
+  const listItem = document.createElement('button')
+  listItem.textContent = index + 1
+
+  // If the player have the level key then the level was already resolved.
+  // In this case show a thumbnail with the mother from this level.
+  if (levelKey) {
+    const data = decodeBase64(gameData.levels[level].data)
+    const wrappedKey = await crypto.subtle.importKey('raw', decodeBase64(levelKey), {name: 'AES-GCM'}, false, ['decrypt'])
+    const decryptedData = await crypto.subtle.decrypt({
+      name: 'AES-GCM',
+      iv: data.slice(0, 16)
+    }, wrappedKey, data.slice(16)).catch(() => null)
+
+    // If it isn't possible to decrypt the data then maybe the level key changed
+    // or the player tried to mess with localStorage values
+    if (decryptedData) {
+      const dataArray = new Uint8Array(decryptedData)
+      const imagePartialData = dataArray.slice(206 + gameData.hintThresholds.length * 18)
+      const imageHeader = decodeBase64(gameData.thumbnailHeader)
+
+      const imageData = concatTypedArray(imageHeader, imagePartialData)
+      const imageURL = URL.createObjectURL(new Blob([imageData], {type: 'image/jpeg'}))
+      listItem.style.backgroundImage = `url(${imageURL})`
+    }
+  }
+
+  // In case the player don't resolved the level it will show a button to access the level.
+  // This button can be locked in case the player can't access this level at the moment.
+  const unlockedScenes = Object.keys(keys).length + gameData.unlockedLevels
+  listItem.addEventListener('click', () => {
+    openLevel(level, index >= unlockedScenes, !!levelKey)
+  })
+  listItem.title = levelKey ? 'Guessed scene' : index >= unlockedScenes ? 'Locked scene' : 'Scene ' + (index + 1)
+  listItem.classList.toggle('solved-scene', !!levelKey)
+  listItem.classList.toggle('locked-scene', index >= unlockedScenes)
+
+  return listItem
+}
+
+async function openLevel (index, isLocked, isSolved) {
+  // This function is responsible for loading the leve, and mainly, the hints of it,
+  // as those can be encrypted.
+  currentLevel = index
+  const levelData = gameData.levels[index]
+  const iv = concatTypedArray(decodeBase64(gameData.hintSalt), decodeBase64(levelData.data).slice(0, 16))
+
+  submitResult.innerHTML = ''
+  hintList.innerHTML = ''
+
+  const decoder = new TextDecoder()
+  let hasEncryptedHints = false
+
+  for (let i = 0; i < levelData.hints.length; i++) {
+    let hint = levelData.hints[i]
+    if (i >= 3) {
+      const key = hintKeys[i - 3]
+      if (!key) {
+        hasEncryptedHints = true
+        break
+      }
+
+      const wrappedKey = await crypto.subtle.importKey('raw', decodeBase64(key), {name: 'AES-GCM'}, false, ['decrypt'])
+      const decryptedHint = await crypto.subtle.decrypt({
+        name: 'AES-GCM',
+        iv
+      }, wrappedKey, decodeBase64(hint)).catch(() => null)
+      if (!decryptedHint) continue
+
+      hint = decoder.decode(new Uint8Array(decryptedHint))
+    }
+    const hintEl = document.createElement('li')
+    hintEl.textContent = hint
+    hintList.appendChild(hintEl)
+  }
+
+  if (hasEncryptedHints) {
+    const extraHintEl = document.createElement('li')
+    extraHintEl.className = 'muted'
+    const solvedScenes = Object.keys(keys).length
+    const scenesToNextHint = gameData.hintThresholds.find(e => e > solvedScenes) - solvedScenes
+    extraHintEl.textContent = `Guess ${scenesToNextHint} more ${scenesToNextHint === 1 ? 'scene' : 'scenes'} to unlock a hint.`
+    hintList.appendChild(extraHintEl)
+  }
+
+  const levelElement = document.getElementById('scene-view')
+  levelElement.classList.toggle('locked-scene-view', isLocked)
+  levelElement.classList.toggle('solved-scene-view', isSolved)
+
+  gotoView('scene-view')
+}
+
+// The functions handleImagePaste and handleImageUpload are responsible to receive
+// the image contents, either by the <input> or by Ctrl+V
+function handleImagePaste (evt) {
+  handleImage(evt.clipboardData.files[0])
+}
+
+function handleImageUpload () {
+  handleImage(submitInput.files[0])
+}
+
+// This is the main function of the game (and also the biggest of it):
+// It loads the image from the player and processes it's dHash.
+// To process the dHash first it reduces the size of the image.
+// As there browser differences when downsizing images the code handles
+// it by averaging the values on it, while converting the image to black and white.
+// Finally this hash is as a password, derived with PBKDF2 generating a key which
+// is used to decrypt the level key. If the decryption succeeds then the level
+// data is decrypted and the level is unlocked.
+async function handleImage (file) {
+  if (currentLevel === null) return
+  if (!file || file.type.split('/')[0] !== 'image') {
+    submitResult.textContent = 'This file is not an image.'
+    submitInput.value = ''
+    return
+  }
+
+  // Load the file
+  const reader = new FileReader()
+  reader.readAsDataURL(file)
+  await new Promise(resolve => {reader.onload = resolve})
+
+  // Warn the user that the file is being processed and reset the input
+  submitResult.textContent = 'Checking picture...'
+  submitInput.value = ''
+
+  // Load the image
+  let gotError = false
+  const image = new Image()
+  image.src = reader.result
+
+  await new Promise(resolve => {
+    image.onload = resolve
+    image.onerror = () => {
+      gotError = true
+      resolve() // it seems simpler...
+    }
+  })
+
+  if (gotError) {
+    submitResult.textContent = 'Could not open this file as a image.'
+    return
+  }
+
+  // Create a canvas to get image data
+  const imageCanvas = document.createElement('canvas')
+  imageCanvas.width = image.width
+  imageCanvas.height = image.height
+
+  const imagectx = imageCanvas.getContext('2d')
+  imagectx.drawImage(image, 0, 0)
+  const imageData = imagectx.getImageData(0, 0, image.width, image.height)
+
+  // The image hash is generated by a reduction as long to a color reduction and followed
+  // of the perceptual hash calculation from a horizontal and vertical slice.
+  const grayValues = []
+  const sizeMin = 5
+  const sizeMax = 6
+
+  // Get the fixed width and height values, slicing the image in the 16:9 proportion
+  // as many users will input screen shots and rarely those have the correct proportion
+  const isLandscape = image.width > image.height * 16 / 9
+  const fixedWidth = isLandscape ? image.height * 16 / 9 : image.width
+  const fixedHeight = isLandscape ? image.height : image.width * 9 / 16
+  const startX = (image.width - fixedWidth) / 2
+  const startY = (image.height - fixedHeight) / 2
+  const rX = fixedWidth / sizeMax
+  const rY = fixedHeight / sizeMax
+  const padding = 0.25
+
+  for (let y = 0; y < sizeMax; y++) {
+    for (let x = 0; x < sizeMax; x++) {
+      // The superior right pixel is ignored because it's where is the Crunchyroll's logo
+      if (x === sizeMax - 1 && y === 0) continue
+
+      let valueSum = 0
+      let pixelCount = 0
+      const minX = Math.floor(startX + Math.max(0, x - padding) * rX)
+      const maxX = Math.ceil(startX + Math.min(sizeMax, x + 1 + padding) * rX)
+      const minY = Math.floor(startY + Math.max(0, y - padding) * rY)
+      const maxY = Math.ceil(startY + Math.min(sizeMax, y + 1 + padding) * rY)
+
+      for (let y2 = minY; y2 < maxY; y2++) {
+        for (let x2 = minX + (y2 % 2); x2 < maxX; x2 += 2) {
+          // The grayscale conversion uses a luma formula based on the CCIR 601 standard
+          // simplified to work with integer coefficients
+          const i = (x2 + y2 * image.width) * 4
+          valueSum += 3 * imageData.data[i] + 5 * imageData.data[i + 1] + imageData.data[i + 2]
+          pixelCount++
+        }
+      }
+
+      grayValues[x + y * sizeMax] = valueSum / pixelCount
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+  }
+
+  // Generate the hash as a binary string
+  let hash = ''
+
+  // First we compare the pixels horizontally
+  for (let y = 0; y < sizeMin; y++) {
+    for (let x = 0; x < sizeMin; x++) {
+      const pixelA = grayValues[x + (y + 1) * sizeMax]
+      const pixelB = grayValues[x + 1 + (y + 1) * sizeMax]
+      hash += pixelA < pixelB ? 1 : 0
+    }
+  }
+
+  // Then we compare those vertically
+  for (let x = 0; x < sizeMin; x++) {
+    for (let y = 0; y < sizeMin; y++) {
+      const pixelA = grayValues[x + y * sizeMax]
+      const pixelB = grayValues[x + (y + 1) * sizeMax]
+      hash += pixelA < pixelB ? 1 : 0
+    }
+  }
+
+  // This string is converted into an array
+  hash = bin2arr(hash)
+
+  // This used is used as an password and derived using PBKDF2
+  const levelInfo = gameData.levels[currentLevel]
+  const salt = decodeBase64(levelInfo.data).slice(0, 16)
+  const pbkdf2Wrapper = await crypto.subtle.importKey('raw', hash, {name: 'PBKDF2'}, false, ['deriveKey'])
+  const imageKey = await crypto.subtle.deriveKey({
+    name: 'PBKDF2',
+    salt,
+    iterations: 1e4,
+    hash: {name: 'SHA-1'},
+  }, pbkdf2Wrapper, {
+    name: 'AES-GCM',
+    length: 128
+  }, false, ['decrypt'])
+
+  // The resulting key is used to decrypt the level key
+  const encryptionKey = await crypto.subtle.decrypt({
+    name: 'AES-GCM',
+    iv: salt
+  }, imageKey, decodeBase64(levelInfo.key)).catch(() => null)
+
+  if (!encryptionKey) {
+    submitResult.textContent = 'This is not the right scene, try again.'
+    return
+  }
+
+  // Store the level key
+  keys[currentLevel] = encodeBase64(new Uint8Array(encryptionKey))
+  localStorage.setItem('mother-game-keys-' + nick, JSON.stringify(keys))
+
+  // Check if it's possible to unlock some hint
+  const solvedLevels = Object.keys(keys)
+  const hintIndex = gameData.hintThresholds.indexOf(solvedLevels.length)
+  if (hintIndex !== -1) {
+    // A hint can be unlocked
+    const hintShares = []
+
+    for (let level of solvedLevels) {
+      const data = decodeBase64(gameData.levels[level].data)
+      const key = keys[level]
+
+      const wrappedKey = await crypto.subtle.importKey('raw', decodeBase64(key), {name: 'AES-GCM'}, false, ['decrypt'])
+      const decryptedData = await crypto.subtle.decrypt({
+        name: 'AES-GCM',
+        iv: data.slice(0, 16)
+      }, wrappedKey, data.slice(16))
+
+      const dataArray = new Uint8Array(decryptedData)
+      const share = dataArray.slice(206 + 18 * hintIndex, 206 + 18 * (hintIndex + 1))
+      hintShares.push(share)
+    }
+
+    const hintKey = combineSecrets(hintShares)
+    hintKeys.push(encodeBase64(hintKey))
+    localStorage.setItem('mother-game-hints-' + nick, JSON.stringify(hintKeys))
+  }
+
+  // Replace the level button
+  const levelIndex = levels.indexOf(currentLevel)
+  const newListItem = await getLevelElement(levelIndex)
+  sceneList.childNodes[levelIndex].replaceWith(newListItem)
+
+  // Unlock a scene
+  const lockedScene = document.querySelector('.locked-scene')
+  if (lockedScene) {
+    const levelIndex = [].indexOf.call(sceneList.childNodes, lockedScene)
+    const newListItem = await getLevelElement(levelIndex)
+    lockedScene.replaceWith(newListItem)
+  }
+
+  // Update ranks
+  loadRank()
+
+  // Return to the scene list
+  gotoView('list-view')
+  currentLevel = null
+}
+
+// The functions loadRank, getLevelSignature, verifyLevelSignature and renderRankRow
+// are responsible to make the ranking work.
+// The ranking working by validating ECDSA signatures, which allows each player
+// to verify each other by posting those signatures in a open server without
+// showing to other players (and the server) any secret beside that the player
+// could unlock that level.
+async function loadRank () {
+  const tableBody = document.querySelector('#list-view tbody')
+  if (!navigator.onLine) {
+    document.querySelector('.rank-container').classList.remove('loading')
+    tableBody.innerHTML = '<tr><td colspan="3">You are offline.</td></tr>'
+    return
+  }
+
+  const rankApiEndpoint = 'https://mothers-day-game-37430.firebaseio.com/'
+  let data = await fetch(rankApiEndpoint + 'players.json').then(e => {
+    if (e.status > 400) throw Error('HTTP error')
+    return e.json()
+  }).catch(e => e)
+
+  document.querySelector('.rank-container').classList.remove('loading')
+
+  if (data instanceof Error) {
+    tableBody.innerHTML = '<tr><td colspan="3">There was an error when loading the ranking. The server might be overloaded.</td></tr>'
+    return
+  }
+
+  if (data === null) data = {}
+
+  // Check if the player's own ranks are updated
+  const solvedLevels = Object.keys(keys)
+  if (solvedLevels.length > 0) {
+    const ownRanks = data[nick] || {}
+    const missingRanks = {}
+
+    for (let level of solvedLevels) {
+      if (ownRanks[level]) continue
+      const signature = await getLevelSignature(level)
+      const timestamp = {'.sv': 'timestamp'}
+      missingRanks[level] = { signature, timestamp }
+      ownRanks[level] = {
+        timestamp: Date.now(),
+        signature
+      }
+    }
+
+    // Update those ranks on the server
+    if (Object.keys(missingRanks).length > 0) {
+      for (let rank in missingRanks) {
+        fetch(rankApiEndpoint + `players/${nick}/${rank}.json`, {
+          method: 'PUT',
+          body: JSON.stringify(missingRanks[rank])
+        }).then(e => {
+          if (e.status > 400) throw Error('HTTP Error')
+        })
+      }
+    }
+
+    data[nick] = ownRanks
+  }
+
+  const serverRanks = Object.entries(data)
+  const ranks = []
+
+  for (let [user, levels] of serverRanks) {
+    const levelList = await getLevels(user)
+    let score = 0
+    let timestamp = 0
+
+    for (let i = 0; i < score + gameData.unlockedLevels; i++) {
+      const levelIndex = levelList[i]
+      const levelData = levels[levelIndex]
+      if (!levelData) continue
+
+      const isValidSignature = await verifyLevelSignature(user, levelIndex, levelData.signature)
+      if (isValidSignature) {
+        timestamp = Math.max(timestamp, levelData.timestamp)
+        score++
+      }
+    }
+
+    if (score > 0) ranks.push({user, score, timestamp})
+  }
+
+  if (ranks.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="3">No one is on the ranking. You can be the first one!</td></tr>'
+    return
+  }
+
+  ranks.sort((a, b) => {
+    return (b.score - a.score) || (a.timestamp - b.timestamp)
+  })
+
+  tableBody.innerHTML = ''
+  for (let i = 0; i < ranks.length; i++) {
+    const element = renderRankRow(i, ranks[i])
+    tableBody.appendChild(element)
+  }
+}
+
+async function getLevelSignature (level) {
+  const data = decodeBase64(gameData.levels[level].data)
+  const wrappedKey = await crypto.subtle.importKey('raw', decodeBase64(keys[level]), {name: 'AES-GCM'}, false, ['decrypt'])
+  const decryptedData = await crypto.subtle.decrypt({
+    name: 'AES-GCM',
+    iv: data.slice(0, 16)
+  }, wrappedKey, data.slice(16))
+
+  const levelPrivateKey = JSON.parse(new TextDecoder().decode(new Uint8Array(decryptedData).slice(0, 206)))
+  const privateKey = await crypto.subtle.importKey('jwk', levelPrivateKey, {
+    name: 'ECDSA',
+    namedCurve: 'P-256'
+  }, false, ['sign'])
+
+  const nickArray = new TextEncoder().encode(nick)
+  const signature = await crypto.subtle.sign({
+    name: 'ECDSA',
+    hash: {name: 'SHA-256'}
+  }, privateKey, nickArray)
+
+  return encodeBase64(new Uint8Array(signature))
+}
+
+async function verifyLevelSignature (nick, level, signature) {
+  const nickArray = new TextEncoder().encode(nick)
+  const signatureArray = decodeBase64(signature)
+  const levelPublicKey = decodeBase64(gameData.levels[level].publicKey)
+  const publicKey = await crypto.subtle.importKey('spki', levelPublicKey, {
+    name: 'ECDSA',
+    namedCurve: 'P-256'
+  }, false, ['verify'])
+
+  const isValid = await crypto.subtle.verify({
+    name: 'ECDSA',
+    hash: {name: 'SHA-256'}
+  }, publicKey, signatureArray, nickArray)
+
+  return isValid
+}
+
+function renderRankRow (index, rank) {
+  const tr = document.createElement('tr')
+  tr.classList.toggle('rank-own', rank.user === nick)
+
+  const rankTd = document.createElement('td')
+  rankTd.textContent = index + 1
+  tr.appendChild(rankTd)
+
+  const nameTd = document.createElement('td')
+  nameTd.textContent = rank.user
+  tr.appendChild(nameTd)
+
+  const levelsTd = document.createElement('td')
+  levelsTd.textContent = rank.score
+  tr.appendChild(levelsTd)
+
+  return tr
+}
+
+// The functions returnToList, showGameInfo, resetStorage and gotoView are navigation auxiliary functions
+function returnToList () {
+  gotoView(nick ? 'list-view' : 'main-view')
+  currentLevel = null
+}
+
+function showGameInfo () {
+  gotoView('game-info-view')
+}
+
+function resetStorage () {
+  localStorage.removeItem('mother-game-nick')
+  gotoView('main-view')
+  nick = null
+}
+
+function gotoView (targetView) {
+  const views = document.querySelectorAll('.view')
+  for (let view of views) {
+    view.classList.toggle('current', view.id === targetView)
+  }
+}
+
+// The functions encodeBase64 and decodeBase64 come from the tweetnacl-util library
+function encodeBase64 (arr) {
+  let s = []
+  for (let i = 0; i < arr.length; i++) s.push(String.fromCharCode(arr[i]))
+  return window.btoa(s.join(''))
+}
+
+function decodeBase64 (input) {
+  let d = window.atob(input)
+  let b = new Uint8Array(d.length)
+  for (let i = 0; i < d.length; i++) b[i] = d.charCodeAt(i)
+  return b
+}
+
+// The functions concatTypedArray and bin2arr are array auxiliary functions
+function concatTypedArray (a, b) {
+  const merged = new Uint8Array(a.length + b.length)
+  merged.set(a, 0)
+  merged.set(b, a.length)
+  return merged
+}
+
+function bin2arr (str) {
+  const result = []
+  const len = Math.ceil(str.length / 8)
+  str = str.padEnd(len * 8, 0)
+  for (let i = 0; i < len; i++) result[i] = parseInt(str.substr(i * 8, 8), 2)
+  return new Uint8Array(result)
+}
+
+// The function combineSecrets is the "combine" function fromt he secrets.js library,
+// made by Alexander Stetsyuk and released under the MIT licence.
+// It was simplified to work with only 8 bit secrets and using Uint8Array
+// instead of hexadecimal strings
+let combineSecrets
+{
+  const bits = 8
+  const size = 2 ** bits
+  const max = size - 1
+  const exps = []
+  const logs = []
+
+  // Construct the exp and log tables for multiplication.
+  let x = 1
+  for (let i = 0; i < size; i++) {
+    exps[i] = x
+    logs[x] = i
+    x <<= 1
+    if (x >= size) {
+      x ^= 29
+      x &= max
+    }
+  }
+
+  // Method that evaluates the Lagrange interpolation polynomial
+  // for individual bits-length segments of each share in the `shares` Array.
+  function combine (shares) {
+    const x = []
+    const y = []
+    let result = ''
+
+    for (let i = 0, len = shares.length; i < len; i++) {
+      let share = shares[i]
+      let idx = x.push(share[0]) - 1
+      share = split(arr2bin(share.slice(1)))
+      for (let j = 0, len2 = share.length; j < len2; j++) {
+        y[j] = y[j] || []
+        y[j][idx] = share[j]
+      }
+    }
+    for (let i = 0, len = y.length; i < len; i++) {
+      result = lagrange(0, x, y[i]).toString(2).padStart(bits, 0) + result
+    }
+
+    const idx = result.indexOf('1') // find the first 1
+    return bin2arr(result.slice(idx + 1))
+  }
+
+  // Evaluate the Lagrange interpolation polynomial at x = `at`
+  // using x and y Arrays that are of the same length, with
+  // corresponding elements constituting points on the polynomial.
+  function lagrange (at, x, y) {
+    let sum = 0
+    let product
+    for (let i = 0, len = x.length; i < len; i++) {
+      if (!y[i]) continue
+
+      product = logs[y[i]]
+      for (let j = 0; j < len; j++) {
+        if (i === j) continue
+        if (at === x[j]) { // happens when computing a share that is in the list of shares used to compute it
+          product = -1 // fix for a zero product term, after which the sum should be sum^0 = sum, not sum^1
+          break
+        }
+        product = ((product + logs[at ^ x[j]] - logs[x[i] ^ x[j]] + max) /* to make sure it's not negative */) % max
+      }
+      sum = sum ^ exps[product]
+    }
+    return sum
+  }
+
+  // Splits a number string `bits`-length segments, after first
+  // optionally zero-padding it to a length that is a multiple of `padLength.
+  // Returns array of integers (each less than 2^bits-1), with each element
+  // representing a `bits`-length segment of the input string from right to left,
+  // i.e. parts[0] represents the right-most `bits`-length segment of the input string.
+  function split (str, padLength) {
+    if (padLength) str = str.padStart(padLength, 0)
+    const parts = []
+    for (var i = str.length; i > bits; i -= bits) {
+      parts.push(parseInt(str.slice(i - bits, i), 2))
+    }
+    parts.push(parseInt(str.slice(0, i), 2))
+    return parts
+  }
+
+  // Converts a Uint8Array to the internal data format (a binary string)
+  // The inverse function, bin2arr, is outside the block as it's used to generate the dHash
+  function arr2bin (str) {
+    return Array.from(str).map(e => e.toString(2).padStart(8, 0)).join('')
+  }
+
+  combineSecrets = combine
+}
+
+// Marks the browser as compatible (more info below)
+window.compatibleBrowser = true
+
+// Start the game
+prepareGame()
+}</script>
+
+<script>
+// The script above have parts which are compatible only with modern browsers
+// like async/await, for of and () => {}
+// Trying to load it in older browsers will throw an syntax error
+// Then this script handles this problem and shows an error message
+if (!window.compatibleBrowser) {
+  document.getElementById('game-info-view').className += ' current'
+}
+
+// Of course I could use Babel, but I prefer that people update
+// their browsers to aboid security vulnerabilities.
+</script>

@@ -1,0 +1,18 @@
+{
+  "name": "dia-das-maes",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "jimp": "^0.2.28",
+    "node-fetch": "^2.1.2",
+    "node-webcrypto-ossl": "^1.0.36"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "qgustavor",
+  "license": "ISC",
+  "private": "true"
+}
