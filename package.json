@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "jimp": "^0.9.3",
+    "jimp": "^0.12.1",
     "node-fetch": "^2.1.2",
-    "node-webcrypto-ossl": "^1.0.36"
+    "node-webcrypto-ossl": "^2.0.1"
   },
   "devDependencies": {},
   "scripts": {
