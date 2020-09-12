@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "jimp": "^0.12.1",
-    "node-fetch": "^2.1.2",
+    "node-fetch": "^2.6.1",
     "node-webcrypto-ossl": "^2.0.1"
   },
   "devDependencies": {},
